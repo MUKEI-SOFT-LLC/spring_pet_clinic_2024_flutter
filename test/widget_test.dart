@@ -13,7 +13,7 @@ import 'package:spring_pet_clinic_2021_flutter/main.dart';
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(MyApp());
+    await tester.pumpWidget(PetClinicApp());
 
     // Verify that our counter starts at 0.
     expect(find.text('0'), findsOneWidget);
