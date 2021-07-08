@@ -13,10 +13,10 @@ final tabIndexProvider = StateProvider<int>((ref) => 0);
 class MainPage extends ConsumerWidget {
 
   final List bodyResolver = [
-        () => HomeTab(),
-        () => OwnerTab(),
-        () => PetTab(),
-        () => VeterinarianTab(),
+    () => HomeTab(),
+    () => OwnerTab(),
+    () => PetTab(),
+    () => VeterinarianTab(),
   ];
 
   @override

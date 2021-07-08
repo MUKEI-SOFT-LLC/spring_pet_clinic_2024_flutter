@@ -1,26 +1,12 @@
-import 'dart:io';
 
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:spring_pet_clinic_2021_flutter/di.dart';
 
 import 'ui/page/main_page.dart';
 
 void main() async {
-  const androidHost = '10.0.2.2';
-  const iosHost = 'localhost';
-  try {
-    print('iku--');
-    var hostName = androidHost;
-    if (Platform.isIOS) {
-      hostName = iosHost;
-    }
-    final response =
-        await new Dio().get('http://$hostName:9966/petclinic/api/pets');
-    print(response);
-  } catch (e, message) {
-    print('$e : $message');
-  }
+  injectDependencies();
   runApp(ProviderScope(child: PetClinicApp()));
 }
 
