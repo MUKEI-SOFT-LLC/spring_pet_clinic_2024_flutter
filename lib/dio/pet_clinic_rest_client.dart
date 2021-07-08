@@ -18,8 +18,10 @@ class PetClinicRestClient extends DioForNative {
         (response.data as List).map((e) => Pet.fromJson(e)).toList());
   }
 
-  Future<Response> save(Pet pet) {
+  Stream<Response> save(Pet pet) {
     final json = jsonEncode(pet);
-    return super.put('/pets/${pet.id}', data: json);
+    return super
+        .put('/pets/${pet.id}', data: json)
+        .asStream();
   }
 }

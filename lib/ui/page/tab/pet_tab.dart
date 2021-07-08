@@ -106,7 +106,6 @@ class PetTab extends ConsumerWidget {
     final reloadProvider = context.read(petsReloadProvider);
     final nameController = TextEditingController(text: pet.name);
     final birthDateController = TextEditingController(text: pet.birthDate);
-    final errorMessageController = TextEditingController();
     final progressHud = ProgressHUD(
       barrierEnabled: true,
       child: Builder(
@@ -145,6 +144,7 @@ class PetTab extends ConsumerWidget {
                           width: 150,
                           child: TextField(
                             maxLines: 1,
+                            maxLength: 10,
                             controller: birthDateController,
                           ))
                     ],
@@ -158,58 +158,61 @@ class PetTab extends ConsumerWidget {
                       ElevatedButton(
                           style: ElevatedButton.styleFrom(
                               primary: Colors.blueGrey),
-                          onPressed: () => _cancelEdit(context),
+                          onPressed: () => Navigator.pop(context, false),
                           child: const Text('cancel')),
                       ElevatedButton(
-                          onPressed: () async {
-                            // TODO barrier not work completely.
-                            final progress = ProgressHUD.of(progressContext)!;
-                            pet.name = nameController.value.text;
-                            pet.birthDate = birthDateController.value.text;
-                            try {
-                              progress.show();
-                              await GetIt.instance
-                                  .get<PetClinicRestClient>()
-                                  .save(pet);
-                            } on DioError catch (e) {
-                              final snackBar = SnackBar(
-                                  content: Container(
+                        child: const Text('save'),
+                        onPressed: () {
+                          pet.name = nameController.value.text;
+                          pet.birthDate = birthDateController.value.text;
+
+                          // TODO barrier not work completely.
+                          final progress = ProgressHUD.of(progressContext)!;
+                          progress.show();
+
+                          GetIt.instance
+                              .get<PetClinicRestClient>()
+                              .save(pet)
+                              .listen((response) => print, onDone: () {
+                            progress.dismiss();
+                            Navigator.of(context).pop(true);
+                          }, onError: (e, stackTrace) {
+                            final snackBar = SnackBar(
+                                content: Container(
                                     height: 90,
-                                      child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      mainAxisAlignment: MainAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'What went wrong!!',
-                                          style: TextStyle(
-                                              color: Colors.red,
-                                              fontWeight: FontWeight.bold),
-                                        ),
-                                        Text(e.response!.data.toString())
-                                      ])),
-                                  duration: Duration(seconds: 10));
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(snackBar);
-                            } finally {
-                              progress.dismiss();
-                              Navigator.pop(context, true);
-                            }
-                          },
-                          child: const Text('save'))
+                                    child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'What went wrong!!',
+                                            style: TextStyle(
+                                                color: Colors.red,
+                                                fontWeight: FontWeight.bold),
+                                          ),
+                                          Text(e.response!.data.toString())
+                                        ])),
+                                duration: Duration(seconds: 10));
+                            ScaffoldMessenger.of(context)
+                                .showSnackBar(snackBar);
+                          });
+                        },
+                      ),
                     ],
                   ),
                 ],
               )),
     );
 
-    final edit = await showDialog(
+    final saved = await showDialog(
         context: context,
         barrierDismissible: false,
         builder: (context) {
           return Dialog(child: progressHud);
         });
-    if (edit) {
+    if (saved) {
       print('will reload!');
       reloadProvider.state = ReloadTrigger();
     }
@@ -294,9 +297,5 @@ class PetTab extends ConsumerWidget {
                 ],
               ));
         });
-  }
-
-  void _cancelEdit(BuildContext context) {
-    Navigator.pop(context, false);
   }
 }
