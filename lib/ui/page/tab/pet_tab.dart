@@ -6,17 +6,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_progress_hud/flutter_progress_hud.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_it/get_it.dart';
+import 'package:spring_pet_clinic_2021_flutter/di.dart';
 import 'package:spring_pet_clinic_2021_flutter/dio/pet_clinic_rest_client.dart';
 import 'package:spring_pet_clinic_2021_flutter/entity/owner.dart';
 import 'package:spring_pet_clinic_2021_flutter/entity/pet.dart';
 import 'package:spring_pet_clinic_2021_flutter/entity/visit.dart';
+import 'package:spring_pet_clinic_2021_flutter/ui/page/tab/owner_tab.dart';
 import 'package:spring_pet_clinic_2021_flutter/ui/reload_trigger.dart';
 
 final petsReloadProvider = StateProvider<ReloadTrigger>((_) => ReloadTrigger());
 
 final petProvider = StreamProvider<List<Pet>>((ref) {
   ref.watch(petsReloadProvider);
-  return GetIt.instance.get<PetClinicRestClient>().allPets;
+  return getIt.get<PetClinicRestClient>().allPets;
 });
 
 class PetTab extends ConsumerWidget {
@@ -47,59 +49,68 @@ class PetTab extends ConsumerWidget {
         child: InkWell(
             onTap: () => _edit(context, pet),
             child: Container(
-                padding: EdgeInsets.all(15),
-                child: Table(
-                  border: TableBorder.all(
-                      width: 0, color: Colors.white.withOpacity(0)),
-                  children: [
-                    TableRow(children: [
-                      const Text(
-                        'Name',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const Text('Birthday',
-                          style: const TextStyle(fontWeight: FontWeight.bold)),
-                      const Text('Owner',
-                          style: const TextStyle(fontWeight: FontWeight.bold)),
-                      const Text('Visited?',
-                          style: const TextStyle(fontWeight: FontWeight.bold)),
-                    ]),
-                    TableRow(children: [
-                      Row(children: [
-                        Text(
-                          pet.petType.emoji,
-                          textScaleFactor: 1.5,
+              padding: EdgeInsets.all(15),
+              child: Column(
+                //mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    pet.petType.emoji,
+                    textScaleFactor: 2,
+                  ),
+                  Table(
+                    border: TableBorder.all(
+                        width: 0, color: Colors.white.withOpacity(0)),
+                    children: [
+                      TableRow(children: [
+                        const Text(
+                          'Name',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        Container(width: 5),
-                        Text(pet.name ?? '')
+                        const Text('Birthday',
+                            style:
+                                const TextStyle(fontWeight: FontWeight.bold)),
+                        const Text('Owner',
+                            style:
+                                const TextStyle(fontWeight: FontWeight.bold)),
+                        const Text('Visited?',
+                            style:
+                                const TextStyle(fontWeight: FontWeight.bold)),
                       ]),
-                      Container(
-                          padding: EdgeInsets.only(top: 10),
-                          child: Text(
-                            pet.birthDate ?? '',
-                          )),
-                      TextButton(
-                          child: Text(pet.owner.fullName ?? ''),
-                          onPressed: () => _showOwner(context, pet.owner),
-                          style: TextButton.styleFrom(
-                            alignment: Alignment.topLeft,
-                            padding: EdgeInsets.only(left: 0, top: 0),
-                          )),
-                      if (pet.visits.isNotEmpty)
+                      TableRow(children: [
+                        Container(
+                            padding: EdgeInsets.only(top: 10),
+                            child: Text(pet.name ?? '')),
+                        Container(
+                            padding: EdgeInsets.only(top: 10),
+                            child: Text(
+                              pet.birthDate ?? '',
+                            )),
                         TextButton(
-                            child: const Text('Show'),
+                            child: Text(pet.owner.fullName ?? ''),
+                            onPressed: () => _showOwner(context, pet.owner),
                             style: TextButton.styleFrom(
                               alignment: Alignment.topLeft,
                               padding: EdgeInsets.only(left: 0, top: 0),
-                            ),
-                            onPressed: () => _showVisits(context, pet.visits))
-                      else
-                        Container(
-                            padding: EdgeInsets.only(top: 5),
-                            child: Text('None')),
-                    ]),
-                  ],
-                ))));
+                            )),
+                        if (pet.visits.isNotEmpty)
+                          TextButton(
+                              child: const Text('Show'),
+                              style: TextButton.styleFrom(
+                                alignment: Alignment.topLeft,
+                                padding: EdgeInsets.only(left: 0, top: 0),
+                              ),
+                              onPressed: () => _showVisits(context, pet.visits))
+                        else
+                          Container(
+                              padding: EdgeInsets.only(top: 5),
+                              child: Text('None')),
+                      ]),
+                    ],
+                  ),
+                ],
+              ),
+            )));
   }
 
   _edit(BuildContext context, Pet pet) async {
@@ -170,9 +181,9 @@ class PetTab extends ConsumerWidget {
                           final progress = ProgressHUD.of(progressContext)!;
                           progress.show();
 
-                          GetIt.instance
+                          getIt
                               .get<PetClinicRestClient>()
-                              .save(pet)
+                              .update(pet)
                               .listen((response) => print, onDone: () {
                             progress.dismiss();
                             Navigator.of(context).pop(true);
@@ -213,8 +224,8 @@ class PetTab extends ConsumerWidget {
           return Dialog(child: progressHud);
         });
     if (saved) {
-      print('will reload!');
       reloadProvider.state = ReloadTrigger();
+      context.read(ownersReloadProvider).state = ReloadTrigger();
     }
   }
 

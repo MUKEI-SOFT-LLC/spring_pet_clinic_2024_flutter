@@ -8,6 +8,11 @@ class PetType {
     id = json['id'] as int;
     name = json['name'] as String;
   }
+  PetType.withDefaults() {
+    id = 0;
+    name = 'unknown';
+  }
+
   String get emoji {
     String emoji = '🐾';
     switch (id) {
@@ -36,4 +41,9 @@ class PetType {
     'id': id,
     'name' : name
   };
+
+  String get emojiAndName => '${emoji} ${name}';
+
+  static final _singleton = PetType.withDefaults();
+  static PetType get unknown => _singleton;
 }
