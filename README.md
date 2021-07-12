@@ -4,7 +4,7 @@ Flutter client of Spring pet clinic REST Example API.
 
 <img width='40%' src='https://blog.mukei-soft.co.jp/wp-content/uploads/2021/07/Simulator-Screen-Shot-iPhone-12-Pro-Max-2021-07-11-at-17.13.02.png'/> <img width='40%' src='https://blog.mukei-soft.co.jp/wp-content/uploads/2021/07/Simulator-Screen-Shot-iPhone-12-Pro-Max-2021-07-11-at-17.13.20.png'>
 
-## Advanced preparation.
+## Advanced preparation(of course, requires installed jdk and flutter).
 ```bash
 mkdir <your_directory> && cd <your_directory>
 git init
@@ -18,6 +18,10 @@ See [spring-petclinic-rest](https://github.com/spring-petclinic/spring-petclinic
 
 ## Getting Started
 
+On Android Studio > ./lib/main.dart > Run.
+
+See [blog](https://blog.mukei-soft.co.jp/category/programming/flutter/)
+
 This project is a starting point for a Flutter application.
 
 A few resources to get you started if this is your first Flutter project:
@@ -28,3 +32,7 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter, view our
 [online documentation](https://flutter.dev/docs), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+
+# Remarks
+
+Only works on the (si|e)mulator.
