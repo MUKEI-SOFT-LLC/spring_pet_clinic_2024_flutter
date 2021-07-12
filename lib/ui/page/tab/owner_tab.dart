@@ -14,7 +14,7 @@ import 'package:spring_pet_clinic_2021_flutter/ui/reload_trigger.dart';
 final ownersReloadProvider =
     StateProvider<ReloadTrigger>((_) => ReloadTrigger());
 
-final ownersProvider = StreamProvider<List<Owner>>((ref) {
+final ownersProvider = StreamProvider.autoDispose<List<Owner>>((ref) {
   ref.watch(ownersReloadProvider);
   return getIt.get<PetClinicRestClient>().allOwners;
 });
@@ -129,7 +129,6 @@ class OwnerTab extends ConsumerWidget {
                   })));
         });
     if (saved) {
-      print('will reload!');
       context.read(ownersReloadProvider).state = ReloadTrigger();
       context.read(petsReloadProvider).state = ReloadTrigger();
     }
@@ -189,10 +188,9 @@ class OwnerTab extends ConsumerWidget {
                 // TODO barrier not work completely.
                 final progress = ProgressHUD.of(context)!;
                 progress.show();
-                getIt
-                    .get<PetClinicRestClient>()
-                    .save(pet)
-                    .listen((response) => print, onDone: () {
+
+                getIt.get<PetClinicRestClient>().save(pet).listen((ignore) {},
+                    onDone: () {
                   progress.dismiss();
                   Navigator.of(context).pop(true);
                 }, onError: (e, stackTrace) {
@@ -216,8 +214,6 @@ class OwnerTab extends ConsumerWidget {
                 });
 
                 progress.dismiss();
-                print(
-                    '${nameFieldController.value} : ${birthDateWidget.selectedBirthDate} : ${petTypeWidget.selectedPetType.emojiAndName}');
               },
             ),
           ],

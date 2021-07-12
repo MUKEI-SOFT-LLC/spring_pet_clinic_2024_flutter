@@ -21,7 +21,6 @@ class MainPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, ScopedReader watch) {
-    print('build');
     var provider = watch(tabIndexProvider);
     return Scaffold(
       appBar: PetClinicAppBar(),

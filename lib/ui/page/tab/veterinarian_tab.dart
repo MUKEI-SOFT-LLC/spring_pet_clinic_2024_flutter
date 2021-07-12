@@ -6,7 +6,7 @@ import 'package:spring_pet_clinic_2021_flutter/dio/pet_clinic_rest_client.dart';
 import 'package:spring_pet_clinic_2021_flutter/entity/specialty.dart';
 import 'package:spring_pet_clinic_2021_flutter/entity/veterinarian.dart';
 
-final vetsProvider = StreamProvider<List<Veterinarian>>((ref) {
+final vetsProvider = StreamProvider.autoDispose<List<Veterinarian>>((ref) {
   return getIt.get<PetClinicRestClient>().allVets;
 });
 
@@ -14,7 +14,6 @@ class VeterinarianTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, ScopedReader watch) {
     final watched = watch(vetsProvider);
-    getIt.get<List<Specialty>>().forEach((d) => print(d.name));
     return watched.when(
         data: (vets) {
           final rows = vets
