@@ -1,16 +1,12 @@
-import 'dart:async';
-
-import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_progress_hud/flutter_progress_hud.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:get_it/get_it.dart';
 import 'package:spring_pet_clinic_2021_flutter/di.dart';
 import 'package:spring_pet_clinic_2021_flutter/dio/pet_clinic_rest_client.dart';
 import 'package:spring_pet_clinic_2021_flutter/entity/owner.dart';
 import 'package:spring_pet_clinic_2021_flutter/entity/pet.dart';
 import 'package:spring_pet_clinic_2021_flutter/entity/visit.dart';
+import 'package:spring_pet_clinic_2021_flutter/ui/page/tab/_util.dart';
 import 'package:spring_pet_clinic_2021_flutter/ui/page/tab/owner_tab.dart';
 import 'package:spring_pet_clinic_2021_flutter/ui/reload_trigger.dart';
 
@@ -47,7 +43,7 @@ class PetTab extends ConsumerWidget {
     return Card(
         margin: EdgeInsets.symmetric(vertical: 5, horizontal: 10),
         child: InkWell(
-            onTap: () => _edit(context, pet),
+            onTap: () => _showPetEditDialog(context, pet),
             child: Container(
               padding: EdgeInsets.all(15),
               child: Column(
@@ -113,120 +109,64 @@ class PetTab extends ConsumerWidget {
             )));
   }
 
-  _edit(BuildContext context, Pet pet) async {
+  _showPetEditDialog(BuildContext context, Pet pet) {
     final reloadProvider = context.read(petsReloadProvider);
     final nameController = TextEditingController(text: pet.name);
     final birthDateController = TextEditingController(text: pet.birthDate);
-    final progressHud = ProgressHUD(
-      barrierEnabled: true,
-      child: Builder(
-          builder: (progressContext) => Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      const Text(
-                        'Name',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      SizedBox(
-                          width: 150,
-                          child: TextField(
-                            maxLines: 1,
-                            controller: nameController,
-                            decoration: InputDecoration(
-                              border: null,
-                              counterStyle: null,
-                              counter: null,
-                            ),
-                          ))
-                    ],
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      const Text(
-                        'Birth\nDate',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      SizedBox(
-                          width: 150,
-                          child: TextField(
-                            maxLines: 1,
-                            maxLength: 10,
-                            controller: birthDateController,
-                          ))
-                    ],
-                  ),
-                  Container(
-                    height: 30,
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                              primary: Colors.blueGrey),
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text('cancel')),
-                      ElevatedButton(
-                        child: const Text('save'),
-                        onPressed: () {
-                          pet.name = nameController.value.text;
-                          pet.birthDate = birthDateController.value.text;
-
-                          // TODO barrier not work completely.
-                          final progress = ProgressHUD.of(progressContext)!;
-                          progress.show();
-
-                          getIt
-                              .get<PetClinicRestClient>()
-                              .update(pet)
-                              .listen((ignore) {}, onDone: () {
-                            progress.dismiss();
-                            Navigator.of(context).pop(true);
-                          }, onError: (e, stackTrace) {
-                            final snackBar = SnackBar(
-                                content: Container(
-                                    height: 90,
-                                    child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.center,
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            'What went wrong!!',
-                                            style: TextStyle(
-                                                color: Colors.red,
-                                                fontWeight: FontWeight.bold),
-                                          ),
-                                          Text(e.response!.data.toString())
-                                        ])),
-                                duration: Duration(seconds: 10));
-                            ScaffoldMessenger.of(context)
-                                .showSnackBar(snackBar);
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              )),
-    );
-
-    final saved = await showDialog(
+    showSaveOrCancelDialog<Pet>(
         context: context,
-        barrierDismissible: false,
-        builder: (context) {
-          return Dialog(child: progressHud);
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const Text(
+                  'Name',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                SizedBox(
+                    width: 150,
+                    child: TextField(
+                      maxLines: 1,
+                      controller: nameController,
+                      decoration: InputDecoration(
+                        border: null,
+                        counterStyle: null,
+                        counter: null,
+                      ),
+                    ))
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const Text(
+                  'Birth\nDate',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                SizedBox(
+                    width: 150,
+                    child: TextField(
+                      maxLines: 1,
+                      maxLength: 10,
+                      controller: birthDateController,
+                    ))
+              ],
+            ),
+          ],
+        ),
+        preProcessor: () {
+          pet.name = nameController.value.text;
+          pet.birthDate = birthDateController.value.text;
+          return pet;
+        },
+        streamResolver: (pet) => getIt.get<PetClinicRestClient>().update(pet),
+        onSaved: () {
+          reloadProvider.state = ReloadTrigger();
+          context.read(ownersReloadProvider).state = ReloadTrigger();
         });
-    if (saved) {
-      reloadProvider.state = ReloadTrigger();
-      context.read(ownersReloadProvider).state = ReloadTrigger();
-    }
   }
 
   _showOwner(BuildContext context, Owner owner) {

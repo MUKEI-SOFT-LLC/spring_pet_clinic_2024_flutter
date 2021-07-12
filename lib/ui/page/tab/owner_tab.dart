@@ -1,6 +1,5 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_progress_hud/flutter_progress_hud.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:spring_pet_clinic_2021_flutter/di.dart';
@@ -8,6 +7,7 @@ import 'package:spring_pet_clinic_2021_flutter/dio/pet_clinic_rest_client.dart';
 import 'package:spring_pet_clinic_2021_flutter/entity/owner.dart';
 import 'package:spring_pet_clinic_2021_flutter/entity/pet.dart';
 import 'package:spring_pet_clinic_2021_flutter/entity/pet_type.dart';
+import 'package:spring_pet_clinic_2021_flutter/ui/page/tab/_util.dart';
 import 'package:spring_pet_clinic_2021_flutter/ui/page/tab/pet_tab.dart';
 import 'package:spring_pet_clinic_2021_flutter/ui/reload_trigger.dart';
 
@@ -20,10 +20,8 @@ final ownersProvider = StreamProvider.autoDispose<List<Owner>>((ref) {
 });
 
 class OwnerTab extends ConsumerWidget {
-  late ScopedReader _watch;
   @override
   Widget build(BuildContext context, ScopedReader watch) {
-    this._watch = watch;
     final watchedOwnerProvider = watch(ownersProvider);
     return watchedOwnerProvider.when(
         loading: () => Center(child: CircularProgressIndicator()),
@@ -115,26 +113,7 @@ class OwnerTab extends ConsumerWidget {
     );
   }
 
-  void _snowNewPetForm(BuildContext context, Owner owner) async {
-    final saved = await showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) {
-          return Dialog(
-              child: ProgressHUD(
-                  barrierEnabled: true,
-                  child: Builder(builder: (progressContext) {
-                    return Container(
-                        child: _buildNewPetForm(progressContext, owner));
-                  })));
-        });
-    if (saved) {
-      context.read(ownersReloadProvider).state = ReloadTrigger();
-      context.read(petsReloadProvider).state = ReloadTrigger();
-    }
-  }
-
-  Column _buildNewPetForm(BuildContext context, Owner owner) {
+  void _snowNewPetForm(BuildContext context, Owner owner) {
     final now = DateTime.now();
     final nameFieldController = TextEditingController();
     final birthDateWidget = _NewPetBirthDateWidget(
@@ -142,85 +121,52 @@ class OwnerTab extends ConsumerWidget {
     final petTypeWidget =
         _NewPetDropdownWidget(StateProvider<PetType>((_) => PetType.unknown));
     final errorMessageStateProvider = StateProvider<String>((_) => '');
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const Text(
-              'Name',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            Container(width: 20),
-            SizedBox(
-                width: 150,
-                child: TextField(
-                  controller: nameFieldController,
-                  maxLength: 30,
-                ))
-          ],
-        ), // TODO should adjust pet.name column size.
-        birthDateWidget,
-        petTypeWidget,
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            ElevatedButton(
-                style: ElevatedButton.styleFrom(primary: Colors.blueGrey),
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('cancel')),
-            ElevatedButton(
-              child: const Text('save'),
-              onPressed: () {
-                final pet = Pet.from(
-                    owner,
-                    nameFieldController.value.text,
-                    birthDateWidget.selectedBirthDateAsText,
-                    petTypeWidget.selectedPetType);
-                final validatedMessage = _validate(pet);
-                if (validatedMessage.isNotEmpty) {
-                  context.read(errorMessageStateProvider).state =
-                      validatedMessage.join('\n');
-                  return;
-                }
-                // TODO barrier not work completely.
-                final progress = ProgressHUD.of(context)!;
-                progress.show();
-
-                getIt.get<PetClinicRestClient>().save(pet).listen((ignore) {},
-                    onDone: () {
-                  progress.dismiss();
-                  Navigator.of(context).pop(true);
-                }, onError: (e, stackTrace) {
-                  final snackBar = SnackBar(
-                      content: Container(
-                          height: 90,
-                          child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'What went wrong!!',
-                                  style: TextStyle(
-                                      color: Colors.red,
-                                      fontWeight: FontWeight.bold),
-                                ),
-                                Text(e.response!.data.toString())
-                              ])),
-                      duration: Duration(seconds: 10));
-                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                });
-
-                progress.dismiss();
-              },
-            ),
-          ],
+    showSaveOrCancelDialog<Pet>(
+        context: context,
+        child: Container(
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const Text(
+                  'Name',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Container(width: 20),
+                SizedBox(
+                    width: 150,
+                    child: TextField(
+                      controller: nameFieldController,
+                      maxLength: 30,
+                    ))
+              ],
+            ), // TODO should adjust pet.name column size.
+            birthDateWidget,
+            petTypeWidget,
+          ]),
         ),
-        _ErrorMessageWidget(errorMessageStateProvider),
-      ],
-    );
+        preProcessor: () {
+          final pet = Pet.from(
+              owner,
+              nameFieldController.value.text,
+              birthDateWidget.selectedBirthDateAsText,
+              petTypeWidget.selectedPetType);
+          final validatedMessage = _validate(pet);
+          if (validatedMessage.isNotEmpty) {
+            context.read(errorMessageStateProvider).state =
+                validatedMessage.join('\n');
+            return null;
+          }
+          return pet;
+        },
+        streamResolver: (pet) => getIt.get<PetClinicRestClient>().save(pet),
+        onSaved: () {
+          context.read(ownersReloadProvider).state = ReloadTrigger();
+          context.read(petsReloadProvider).state = ReloadTrigger();
+        },
+        bottomChild: _ErrorMessageWidget(errorMessageStateProvider));
   }
 
   List<String> _validate(Pet pet) {
