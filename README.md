@@ -2,7 +2,7 @@
 
 Flutter client of Spring pet clinic REST Example API.
 
-![home page](https://blog.mukei-soft.co.jp/wp-content/uploads/2021/07/Simulator-Screen-Shot-iPhone-12-Pro-Max-2021-07-11-at-17.13.02.png)
+<img width="50%" src='https://blog.mukei-soft.co.jp/wp-content/uploads/2021/07/Simulator-Screen-Shot-iPhone-12-Pro-Max-2021-07-11-at-17.13.02.png'/>
 
 ## Advanced preparation.
 ```bash
