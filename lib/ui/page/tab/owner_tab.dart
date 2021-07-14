@@ -16,7 +16,7 @@ final ownersReloadProvider =
 
 class OwnerTab extends ConsumerWidget {
 
-  final _ownersProvider = StreamProvider.autoDispose<List<Owner>>((ref) {
+  static final _ownersProvider = StreamProvider<List<Owner>>((ref) {
     ref.watch(ownersReloadProvider);
     return getIt.get<PetClinicRestClient>().allOwners;
   });

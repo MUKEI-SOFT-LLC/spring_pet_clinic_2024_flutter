@@ -14,7 +14,7 @@ final petsReloadProvider = StateProvider<ReloadTrigger>((_) => ReloadTrigger());
 
 class PetTab extends ConsumerWidget {
 
-  final _petProvider = StreamProvider.autoDispose<List<Pet>>((ref) {
+  static final _petProvider = StreamProvider<List<Pet>>((ref) {
     ref.watch(petsReloadProvider);
     return getIt.get<PetClinicRestClient>().allPets;
   });
@@ -111,7 +111,6 @@ class PetTab extends ConsumerWidget {
   }
 
   _showPetEditDialog(BuildContext context, Pet pet) {
-    final reloadProvider = context.read(petsReloadProvider);
     final nameController = TextEditingController(text: pet.name);
     final birthDateController = TextEditingController(text: pet.birthDate);
     showSaveOrCancelDialog<Pet>(
@@ -165,7 +164,7 @@ class PetTab extends ConsumerWidget {
         },
         streamResolver: (pet) => getIt.get<PetClinicRestClient>().update(pet),
         onSaved: () {
-          reloadProvider.state = ReloadTrigger();
+          context.read(petsReloadProvider).state = ReloadTrigger();
           context.read(ownersReloadProvider).state = ReloadTrigger();
         });
   }
