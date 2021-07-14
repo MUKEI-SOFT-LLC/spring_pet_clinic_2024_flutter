@@ -118,7 +118,7 @@ class OwnerTab extends ConsumerWidget {
     final now = DateTime.now();
     final nameFieldController = TextEditingController();
     final birthDateWidget = _NewPetBirthDateWidget(
-        StateProvider<DateTime>((_) => now.add(Duration(days: 1))), now);
+        StateProvider<DateTime?>((_) => null), now);
     final petTypeWidget =
         _NewPetDropdownWidget(StateProvider<PetType>((_) => PetType.unknown));
     final errorMessageStateProvider = StateProvider<String>((_) => '');
@@ -221,11 +221,10 @@ class _NewPetDropdownWidget extends ConsumerWidget {
 class _NewPetBirthDateWidget extends ConsumerWidget {
   static final formatter = DateFormat('yyyy/MM/dd');
 
-  final StateProvider<DateTime> _stateProvider;
+  final StateProvider<DateTime?> _stateProvider;
   final DateTime _now;
 
   late var _watched;
-  bool _picked = false;
 
   _NewPetBirthDateWidget(this._stateProvider, this._now);
 
@@ -244,19 +243,17 @@ class _NewPetBirthDateWidget extends ConsumerWidget {
               if (null != picked) {
                 _watched.state = picked;
               }
-              _picked = true;
             },
             child: const Text('Birth Date')),
-        Text(_picked ? formatter.format(_watched.state) : '')
+        if (null != _watched.state)
+          Text(formatter.format(_watched.state)),
       ],
     );
   }
 
-  DateTime get selectedBirthDate => _watched.state;
+  DateTime? get selectedBirthDate => _watched.state;
   String? get selectedBirthDateAsText =>
-      selectedBirthDate.isAfter(DateTime.now())
-          ? null
-          : formatter.format(selectedBirthDate);
+      null == selectedBirthDate ? null : formatter.format(selectedBirthDate!);
 }
 
 class _ErrorMessageWidget extends ConsumerWidget {
