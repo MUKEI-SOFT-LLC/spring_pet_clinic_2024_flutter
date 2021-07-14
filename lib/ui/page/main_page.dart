@@ -8,10 +8,10 @@ import 'package:spring_pet_clinic_2021_flutter/ui/page/tab/veterinarian_tab.dart
 import 'package:spring_pet_clinic_2021_flutter/ui/part/pet_clinic_app_bar.dart';
 import 'package:spring_pet_clinic_2021_flutter/ui/part/pet_clinici_bottom_navigation_bar.dart';
 
-final tabIndexProvider = StateProvider<int>((ref) => 0);
-
 class MainPage extends ConsumerWidget {
 
+  final _tabIndexProvider = StateProvider<int>((ref) => 0);
+  
   final List bodyResolver = [
     () => HomeTab(),
     () => OwnerTab(),
@@ -21,12 +21,12 @@ class MainPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, ScopedReader watch) {
-    var provider = watch(tabIndexProvider);
+    var watched = watch(_tabIndexProvider);
     return Scaffold(
       appBar: PetClinicAppBar(),
-      body: bodyResolver[provider.state](),
+      body: bodyResolver[watched.state](),
       bottomNavigationBar: PetClinicBottomNavigationBar(
-          provider.state, (tabIndex) => provider.state = tabIndex),
+          watched.state, (tabIndex) => watched.state = tabIndex),
     );
   }
 }

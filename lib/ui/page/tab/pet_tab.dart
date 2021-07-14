@@ -12,16 +12,17 @@ import 'package:spring_pet_clinic_2021_flutter/ui/reload_trigger.dart';
 
 final petsReloadProvider = StateProvider<ReloadTrigger>((_) => ReloadTrigger());
 
-final petProvider = StreamProvider.autoDispose<List<Pet>>((ref) {
-  ref.watch(petsReloadProvider);
-  return getIt.get<PetClinicRestClient>().allPets;
-});
-
 class PetTab extends ConsumerWidget {
+
+  final _petProvider = StreamProvider.autoDispose<List<Pet>>((ref) {
+    ref.watch(petsReloadProvider);
+    return getIt.get<PetClinicRestClient>().allPets;
+  });
+
   @override
   Widget build(BuildContext context, ScopedReader watch) {
-    final watchedPetProvider = watch(petProvider);
-    return watchedPetProvider.when(
+    final watched = watch(_petProvider);
+    return watched.when(
       loading: () => Center(child: CircularProgressIndicator()),
       data: (pets) => Stack(children: [
         ListView.builder(
