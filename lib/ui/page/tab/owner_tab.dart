@@ -1,39 +1,27 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:spring_pet_clinic_2021_flutter/di.dart';
-import 'package:spring_pet_clinic_2021_flutter/dio/pet_clinic_rest_client.dart';
-import 'package:spring_pet_clinic_2021_flutter/entity/owner.dart';
-import 'package:spring_pet_clinic_2021_flutter/entity/pet.dart';
-import 'package:spring_pet_clinic_2021_flutter/entity/pet_type.dart';
-import 'package:spring_pet_clinic_2021_flutter/ui/page/tab/_util.dart';
-import 'package:spring_pet_clinic_2021_flutter/ui/page/tab/pet_tab.dart';
-import 'package:spring_pet_clinic_2021_flutter/ui/reload_trigger.dart';
+import 'package:get/get.dart';
+import 'package:spring_pet_clinic_2024_flutter/dio/pet_clinic_rest_client.dart';
+import 'package:spring_pet_clinic_2024_flutter/entity/owner.dart';
+import 'package:spring_pet_clinic_2024_flutter/entity/pet.dart';
+import 'package:spring_pet_clinic_2024_flutter/entity/pet_type.dart';
+import 'package:spring_pet_clinic_2024_flutter/ui/page/tab/_util.dart';
+import 'package:spring_pet_clinic_2024_flutter/ui/page/tab/pet_tab.dart';
 
-final ownersReloadProvider =
-    StateProvider<ReloadTrigger>((_) => ReloadTrigger());
-
-class OwnerTab extends ConsumerWidget {
-
-  static final _ownersProvider = StreamProvider<List<Owner>>((ref) {
-    ref.watch(ownersReloadProvider);
-    return getIt.get<PetClinicRestClient>().allOwners;
-  });
-
+class OwnerTab extends GetView<OwnerTabController> {
   @override
-  Widget build(BuildContext context, ScopedReader watch) {
-    final watchedOwnerProvider = watch(_ownersProvider);
-    return watchedOwnerProvider.when(
-        loading: () => Center(child: CircularProgressIndicator()),
-        data: (owners) {
+  Widget build(BuildContext context) {
+    Get.put(OwnerTabController());
+    return controller.obx(
+        (owners) {
           return ListView.builder(
-              itemCount: owners.length,
+              itemCount: owners!.length,
               itemBuilder: (context, index) =>
                   _buildCard(context, owners[index]));
         },
-        error: (Object error, StackTrace? stackTrace) {
-          print(stackTrace);
+        onLoading: Center(child: CircularProgressIndicator()),
+        onError: (error) {
+          print(error);
           return Center(
               child: const Text(
             'Sorry an error occurred while reading...',
@@ -102,11 +90,12 @@ class OwnerTab extends ConsumerWidget {
                     color: Colors.white,
                   ),
                   style: ElevatedButton.styleFrom(
-                      primary: Colors.lightBlueAccent, shape: CircleBorder()),
+                      backgroundColor: Colors.lightBlueAccent,
+                      shape: CircleBorder()),
                 ),
                 const Text(
                   'Add new Pet',
-                  textScaleFactor: 0.8,
+                  textScaler: TextScaler.linear(0.8),
                 ),
               ],
             ),
@@ -115,13 +104,24 @@ class OwnerTab extends ConsumerWidget {
   }
 
   void _snowNewPetForm(BuildContext context, Owner owner) {
-    final now = DateTime.now();
+
     final nameFieldController = TextEditingController();
-    final birthDateWidget = _NewPetBirthDateWidget(
-        StateProvider<DateTime?>((_) => null), now);
-    final petTypeWidget =
-        _NewPetDropdownWidget(StateProvider<PetType>((_) => PetType.unknown));
-    final errorMessageStateProvider = StateProvider<String>((_) => '');
+
+    final birthDateWidget = _initControllerAndWidget<_NewPetBirthDateWidgetController, _NewPetBirthDateWidget>(
+            () => _NewPetBirthDateWidgetController(),
+            (controller) => _NewPetBirthDateWidget(controller),
+            (controller) => controller.updateBirthDate(DateTime.now()));
+
+    final petTypeWidget = _initControllerAndWidget(
+            () => _NewPetDropdownWidgetController(),
+            (controller) => _NewPetDropdownWidget(controller),
+            (controller) => controller.updatePetType(PetType.unknown));
+
+    final errorMessageWidget = _initControllerAndWidget(
+            () => _ErrorMessageController(),
+            (controller) => _ErrorMessageWidget(controller),
+            (controller) => controller.updateMessage(''));
+
     showSaveOrCancelDialog<Pet>(
         context: context,
         child: Container(
@@ -156,18 +156,20 @@ class OwnerTab extends ConsumerWidget {
               petTypeWidget.selectedPetType);
           final validatedMessage = _validate(pet);
           if (validatedMessage.isNotEmpty) {
-            context.read(errorMessageStateProvider).state =
-                validatedMessage.join('\n');
+            Get.find<_ErrorMessageController>()
+                .updateMessage(validatedMessage.join('\n'));
             return null;
           }
           return pet;
         },
-        streamResolver: (pet) => getIt.get<PetClinicRestClient>().save(pet),
+        streamResolver: (pet) => Get.find<PetClinicRestClient>().save(pet),
         onSaved: () {
-          context.read(ownersReloadProvider).state = ReloadTrigger();
-          context.read(petsReloadProvider).state = ReloadTrigger();
+          Get.find<OwnerTabController>().reload();
+          if (Get.isRegistered<PetTabController>()) {
+            Get.find<PetTabController>().reload();
+          }
         },
-        bottomChild: _ErrorMessageWidget(errorMessageStateProvider));
+        bottomChild: errorMessageWidget);
   }
 
   List<String> _validate(Pet pet) {
@@ -185,93 +187,132 @@ class OwnerTab extends ConsumerWidget {
   }
 }
 
+class OwnerTabController extends GetxController with StateMixin<List<Owner>> {
+  @override
+  void onInit() async {
+    load();
+    super.onInit();
+  }
 
-class _NewPetDropdownWidget extends ConsumerWidget {
-  final StateProvider<PetType> _stateProvider;
-  late var _watchedNewPetProvider;
+  void load() {
+    change(List.empty(), status: RxStatus.loading());
+    Get.find<PetClinicRestClient>().allOwners.listen(
+        (data) => change(data, status: RxStatus.success()), onError: (error) {
+      print(error.toString());
+      change(List.empty(), status: RxStatus.error(error.toString()));
+    });
+  }
 
-  _NewPetDropdownWidget(this._stateProvider);
+  void reload() => load();
+}
+
+class _NewPetDropdownWidget extends StatelessWidget {
+  final _NewPetDropdownWidgetController controller;
+
+  _NewPetDropdownWidget(this.controller);
 
   @override
-  Widget build(BuildContext context, ScopedReader watch) {
-    this._watchedNewPetProvider = watch(_stateProvider);
+  Widget build(BuildContext context) {
     final dropMenuItems = [
       DropdownMenuItem(
           value: PetType.unknown, child: Text(PetType.unknown.emojiAndName))
     ];
-    dropMenuItems.addAll(getIt
-        .get<List<PetType>>()
+    dropMenuItems.addAll(Get.find<List<PetType>>()
         .map((type) => DropdownMenuItem<PetType>(
               child: Text(type.emojiAndName),
               value: type,
             ))
         .toList());
-    return DropdownButton<PetType>(
-      items: dropMenuItems,
-      onChanged: (type) {
-        _watchedNewPetProvider.state = type!;
-      },
-      value: _watchedNewPetProvider.state,
-    );
+    return Obx(() => DropdownButton<PetType>(
+          items: dropMenuItems,
+          onChanged: (type) {
+            controller.updatePetType(type!);
+          },
+          value: selectedPetType,
+        ));
   }
 
-  PetType get selectedPetType => _watchedNewPetProvider.state;
+  PetType get selectedPetType => controller.petType.value;
 }
 
-class _NewPetBirthDateWidget extends ConsumerWidget {
+class _NewPetDropdownWidgetController {
+  var petType = Rx<PetType>(PetType.unknown);
+  void updatePetType(PetType pt) {
+    petType.value = pt;
+  }
+}
+
+class _NewPetBirthDateWidget extends StatelessWidget {
   static final formatter = DateFormat('yyyy/MM/dd');
+  final _NewPetBirthDateWidgetController controller;
 
-  final StateProvider<DateTime?> _stateProvider;
-  final DateTime _now;
-
-  late var _watched;
-
-  _NewPetBirthDateWidget(this._stateProvider, this._now);
+  _NewPetBirthDateWidget(this.controller);
 
   @override
-  Widget build(BuildContext context, ScopedReader watch) {
-    this._watched = watch(_stateProvider);
+  Widget build(BuildContext context) {
     return Column(
       children: [
         ElevatedButton(
             onPressed: () async {
               var picked = await showDatePicker(
                   context: context,
-                  initialDate: _now,
-                  firstDate: _now.subtract(Duration(days: 20 * 365)),
-                  lastDate: _now);
+                  initialDate: selectedBirthDate,
+                  firstDate:
+                      selectedBirthDate.subtract(Duration(days: 20 * 365)),
+                  lastDate: selectedBirthDate);
               if (null != picked) {
-                _watched.state = picked;
+                controller.updateBirthDate(picked);
               }
             },
             child: const Text('Birth Date')),
-        if (null != _watched.state)
-          Text(formatter.format(_watched.state)),
+        Obx(() => Text(selectedBirthDateAsText))
       ],
     );
   }
 
-  DateTime? get selectedBirthDate => _watched.state;
-  String? get selectedBirthDateAsText =>
-      null == selectedBirthDate ? null : formatter.format(selectedBirthDate!);
+  DateTime get selectedBirthDate => controller.birthDate.value;
+  String get selectedBirthDateAsText => formatter.format(selectedBirthDate);
 }
 
-class _ErrorMessageWidget extends ConsumerWidget {
-  final StateProvider<String> _stateProvider;
-  late var _watched;
-  _ErrorMessageWidget(this._stateProvider);
+class _NewPetBirthDateWidgetController {
+  var birthDate = Rx<DateTime>(DateTime.now());
+
+  void updateBirthDate(DateTime dt) {
+    birthDate.value = dt;
+  }
+}
+
+class _ErrorMessageWidget extends StatelessWidget {
+  final _ErrorMessageController controller;
+  _ErrorMessageWidget(this.controller);
 
   @override
-  Widget build(BuildContext context, ScopedReader watch) {
-    this._watched = watch(_stateProvider);
-    if (null == _watched.state || 0 == _watched.state.length) {
-      return Container();
-    } else {
-      return Container(
-          child: Text(
-        _watched.state,
-        style: TextStyle(color: Colors.red),
-      ));
-    }
+  Widget build(context) {
+    return Container(
+        child: Obx(() => Text(
+              "${controller.message}",
+              style: TextStyle(color: Colors.red),
+            )));
   }
+}
+
+class _ErrorMessageController {
+  var message = ''.obs;
+  void updateMessage(String msg) {
+    message.value = msg;
+  }
+}
+
+typedef ControllerCreator<CT> = CT Function();
+typedef WidgetCreator<CT, WT> = WT Function(CT controller);
+typedef ControllerResetter<CT> = void Function(CT controller);
+
+WT _initControllerAndWidget<CT, WT>(ControllerCreator<CT> ifControllerAbsent, WidgetCreator<CT, WT> ifWidgetAbsent, ControllerResetter<CT> ifControllerPresent) {
+  if (Get.isRegistered<CT>()) {
+    ifControllerPresent(Get.find<CT>());
+  } else {
+    final CT controller = Get.put(ifControllerAbsent());
+    Get.put(ifWidgetAbsent(controller));
+  }
+  return Get.find<WT>();
 }

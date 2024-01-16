@@ -1,8 +1,8 @@
 import 'dart:math';
 
-import 'package:spring_pet_clinic_2021_flutter/entity/owner.dart';
-import 'package:spring_pet_clinic_2021_flutter/entity/pet_type.dart';
-import 'package:spring_pet_clinic_2021_flutter/entity/visit.dart';
+import 'package:spring_pet_clinic_2024_flutter/entity/owner.dart';
+import 'package:spring_pet_clinic_2024_flutter/entity/pet_type.dart';
+import 'package:spring_pet_clinic_2024_flutter/entity/visit.dart';
 
 class Pet {
   late String? birthDate;

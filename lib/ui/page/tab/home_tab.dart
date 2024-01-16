@@ -12,8 +12,8 @@ class HomeTab extends StatelessWidget {
               children: [
                 Center(
                     child: const Text(
-                  'Welcome to Pet Clinic!',
-                  textScaleFactor: 1.5,
+                      'Welcome to Pet Clinic 2024!',
+                      textScaler: TextScaler.linear(1.5),
                 )),
                 Image(
                   image: AssetImage('assets/images/pets.png'),

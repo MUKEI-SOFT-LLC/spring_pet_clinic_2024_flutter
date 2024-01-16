@@ -1,20 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:spring_pet_clinic_2021_flutter/di.dart';
-import 'package:spring_pet_clinic_2021_flutter/entity/pet_type.dart';
-import 'package:spring_pet_clinic_2021_flutter/entity/specialty.dart';
+import 'package:get/instance_manager.dart';
+import 'package:spring_pet_clinic_2024_flutter/di.dart';
+import 'package:spring_pet_clinic_2024_flutter/entity/pet_type.dart';
+import 'package:spring_pet_clinic_2024_flutter/entity/specialty.dart';
 
 import 'ui/page/main_page.dart';
 
 void main() async {
-  injectDependencies();
-  Future.wait([
-    // cache specialty.
-    getIt.getAsync<List<Specialty>>(),
-    // cache petType.
-    getIt.getAsync<List<PetType>>(),
-  ]);
-  runApp(ProviderScope(child: PetClinicApp()));
+  await injectDependencies();
+  runApp(PetClinicApp());
 }
 
 class PetClinicApp extends StatelessWidget {

@@ -1,43 +1,31 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:spring_pet_clinic_2021_flutter/di.dart';
-import 'package:spring_pet_clinic_2021_flutter/dio/pet_clinic_rest_client.dart';
-import 'package:spring_pet_clinic_2021_flutter/entity/owner.dart';
-import 'package:spring_pet_clinic_2021_flutter/entity/pet.dart';
-import 'package:spring_pet_clinic_2021_flutter/entity/visit.dart';
-import 'package:spring_pet_clinic_2021_flutter/ui/page/tab/_util.dart';
-import 'package:spring_pet_clinic_2021_flutter/ui/page/tab/owner_tab.dart';
-import 'package:spring_pet_clinic_2021_flutter/ui/reload_trigger.dart';
+import 'package:get/get.dart';
+import 'package:spring_pet_clinic_2024_flutter/dio/pet_clinic_rest_client.dart';
+import 'package:spring_pet_clinic_2024_flutter/entity/owner.dart';
+import 'package:spring_pet_clinic_2024_flutter/entity/pet.dart';
+import 'package:spring_pet_clinic_2024_flutter/entity/visit.dart';
+import 'package:spring_pet_clinic_2024_flutter/ui/page/tab/_util.dart';
+import 'package:spring_pet_clinic_2024_flutter/ui/page/tab/owner_tab.dart';
 
-final petsReloadProvider = StateProvider<ReloadTrigger>((_) => ReloadTrigger());
-
-class PetTab extends ConsumerWidget {
-
-  static final _petProvider = StreamProvider<List<Pet>>((ref) {
-    ref.watch(petsReloadProvider);
-    return getIt.get<PetClinicRestClient>().allPets;
-  });
+class PetTab extends GetView<PetTabController> {
 
   @override
-  Widget build(BuildContext context, ScopedReader watch) {
-    final watched = watch(_petProvider);
-    return watched.when(
-      loading: () => Center(child: CircularProgressIndicator()),
-      data: (pets) => Stack(children: [
+  Widget build(BuildContext context) {
+    Get.put(PetTabController());
+    return controller.obx((pets) {
+      return Stack(children: [
         ListView.builder(
-            itemCount: pets.length,
+            itemCount: pets!.length,
             itemBuilder: (context, index) => _buildCard(context, pets[index])),
-      ]),
-      error: (Object error, StackTrace? stackTrace) {
-        print(stackTrace);
-        return Center(
-            child: const Text(
-          'Sorry an error occurred while reading...',
-          style: TextStyle(color: Colors.red),
-        ));
-      },
-    );
+      ]);
+    }, onError: (error) {
+      print(error);
+      return Center(
+          child: const Text(
+        'Sorry an error occurred while reading...',
+        style: TextStyle(color: Colors.red),
+      ));
+    }, onLoading: Center(child: CircularProgressIndicator()));
   }
 
   Widget _buildCard(BuildContext context, Pet pet) {
@@ -53,7 +41,7 @@ class PetTab extends ConsumerWidget {
                 children: [
                   Text(
                     pet.petType.emoji,
-                    textScaleFactor: 2,
+                    textScaler: TextScaler.linear(2.0),
                   ),
                   Table(
                     border: TableBorder.all(
@@ -162,10 +150,12 @@ class PetTab extends ConsumerWidget {
           pet.birthDate = birthDateController.value.text;
           return pet;
         },
-        streamResolver: (pet) => getIt.get<PetClinicRestClient>().update(pet),
+        streamResolver: (pet) => Get.find<PetClinicRestClient>().update(pet),
         onSaved: () {
-          context.read(petsReloadProvider).state = ReloadTrigger();
-          context.read(ownersReloadProvider).state = ReloadTrigger();
+          controller.reload();
+          if (Get.isRegistered<OwnerTabController>()) {
+            Get.find<OwnerTabController>().reload();
+          }
         });
   }
 
@@ -249,4 +239,23 @@ class PetTab extends ConsumerWidget {
               ));
         });
   }
+}
+
+class PetTabController extends GetxController with StateMixin<List<Pet>> {
+
+  @override
+  void onInit() async {
+    load();
+    super.onInit();
+  }
+
+  void load() {
+    change(List.empty(), status: RxStatus.loading());
+    Get.find<PetClinicRestClient>().allPets.listen(
+        (data) => change(data, status: RxStatus.success()), onError: (error) {
+      print(error.toString());
+      change(List.empty(), status: RxStatus.error(error.toString()));
+    });
+  }
+  void reload() => load();
 }

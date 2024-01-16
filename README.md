@@ -1,4 +1,4 @@
-# spring_pet_clinic_2021_flutter
+# spring_pet_clinic_2024_flutter
 
 Flutter client of Spring pet clinic REST Example API.
 

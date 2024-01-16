@@ -3,11 +3,11 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
-import 'package:spring_pet_clinic_2021_flutter/entity/owner.dart';
-import 'package:spring_pet_clinic_2021_flutter/entity/pet.dart';
-import 'package:spring_pet_clinic_2021_flutter/entity/pet_type.dart';
-import 'package:spring_pet_clinic_2021_flutter/entity/specialty.dart';
-import 'package:spring_pet_clinic_2021_flutter/entity/veterinarian.dart';
+import 'package:spring_pet_clinic_2024_flutter/entity/owner.dart';
+import 'package:spring_pet_clinic_2024_flutter/entity/pet.dart';
+import 'package:spring_pet_clinic_2024_flutter/entity/pet_type.dart';
+import 'package:spring_pet_clinic_2024_flutter/entity/specialty.dart';
+import 'package:spring_pet_clinic_2024_flutter/entity/veterinarian.dart';
 
 class PetClinicRestClient {
   final Dio _dio = Dio(BaseOptions(

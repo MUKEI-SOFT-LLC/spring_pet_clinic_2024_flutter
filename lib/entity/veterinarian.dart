@@ -1,4 +1,4 @@
-import 'package:spring_pet_clinic_2021_flutter/entity/specialty.dart';
+import 'package:spring_pet_clinic_2024_flutter/entity/specialty.dart';
 
 class Veterinarian {
   late int id;

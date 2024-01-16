@@ -1,4 +1,4 @@
-import 'package:spring_pet_clinic_2021_flutter/entity/pet.dart';
+import 'package:spring_pet_clinic_2024_flutter/entity/pet.dart';
 
 class Owner {
   late int id;
