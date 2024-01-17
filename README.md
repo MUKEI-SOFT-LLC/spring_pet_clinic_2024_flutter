@@ -2,7 +2,7 @@
 
 Flutter client of Spring pet clinic REST Example API.
 
-<img width='40%' src='https://blog.mukei-soft.co.jp/wp-content/uploads/2021/07/Simulator-Screen-Shot-iPhone-12-Pro-Max-2021-07-11-at-17.13.02.png'/> <img width='40%' src='https://blog.mukei-soft.co.jp/wp-content/uploads/2021/07/Simulator-Screen-Shot-iPhone-12-Pro-Max-2021-07-11-at-17.13.20.png'>
+<img width='40%' src='https://blog.mukei-soft.co.jp/wp-content/uploads/2024/01/image-3-945x2048.png' /><img width='40%' src='https://blog.mukei-soft.co.jp/wp-content/uploads/2024/01/image-4-945x2048.png' />
 
 ## Advanced preparation(of course, requires installed jdk and flutter).
 ```bash
